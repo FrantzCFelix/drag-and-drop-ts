@@ -16,7 +16,6 @@ interface Project {
     people: number;
     status: ProjectStatus;
 }
-
 type Listener = (items: Project[]) => void;
 
 function validate(validatableInput: ValidatorObject) {
@@ -38,7 +37,6 @@ function validate(validatableInput: ValidatorObject) {
     }
     return isValid;
 }
-
 // autobind decorator
 function autobind(_: any, _2: string, descriptor: PropertyDescriptor) {
     // console.log(`Autobind function ${target}`);
@@ -58,20 +56,7 @@ function autobind(_: any, _2: string, descriptor: PropertyDescriptor) {
     return newDescriptor;
 }
 
-
-/*Project class*/
-class singleProject implements Project {
-    constructor(public id: string,
-        public title: string,
-        public description: string,
-        public people: number,
-        public status: ProjectStatus) {
-
-    }
-}
-
-
-// Project state management
+// Project state management class
 class ProjectStateManager {
     private listeners: Listener[] = []
     private projects: Project[] = [];
@@ -106,41 +91,71 @@ class ProjectStateManager {
         }
     }
 }
+// State manager instance
 const projectState = ProjectStateManager.getInstance();
 
-
-
-
-
-/*ProjectList Class */
-class ProjectList {
+// Component Base class
+abstract class ComponentBase<T extends HTMLElement, U extends HTMLElement> {
     templateElement: HTMLTemplateElement;
-    hostElement: HTMLDivElement;
-    sectionElement: HTMLElement;
+    hostElement: T;
+    element: U;
+
+    constructor(templateElementId: string, hostElementId: string, insertAtStart: boolean,newElementId?: string){
+        this.templateElement = document.getElementById(templateElementId)! as HTMLTemplateElement;
+        this.hostElement = document.getElementById(hostElementId)! as T;
+        this.element = document.importNode(this.templateElement.content, true).firstElementChild as U;
+        if(newElementId){
+            this.element.id = newElementId;
+        }
+        this.attach(insertAtStart)
+    }
+    private attach(insertAtBeginning: boolean) {
+        this.hostElement.insertAdjacentElement( insertAtBeginning ? 'afterbegin' : 'beforeend', this.element)
+        //Different way to append template into div tag
+        // const templateClone = this.templateElement.content.cloneNode(true);
+        // this.hostElement.appendChild(templateClone);
+    }
+    abstract configure(): void;
+    abstract renderContent(): void;
+}
+
+/*SingleProject class*/
+class singleProject implements Project {
+    constructor(public id: string,
+        public title: string,
+        public description: string,
+        public people: number,
+        public status: ProjectStatus) {
+
+    }
+}
+/*ProjectList Class*/
+class ProjectList extends ComponentBase<HTMLDivElement, HTMLElement> {
     assignedProjects: Project[];
     constructor(private type: 'active' | 'finished') {
-        this.templateElement = document.getElementById('project-list')! as HTMLTemplateElement;
-        this.hostElement = document.getElementById('app')! as HTMLDivElement;
-        this.sectionElement = document.importNode(this.templateElement.content, true).firstElementChild as HTMLElement;
-        this.sectionElement.id = `${this.type}-projects`
-        this.assignedProjects = []
+        super('project-list', 'app', false, `${type}-projects`)
+    
+        this.assignedProjects = [];
+        this.configure();
+        this.renderContent();
+    }
+
+    configure(){
         projectState.addListener((projects: Project[]) => {
             const releventProjects = projects.filter((project) => {
-                if(this.type === 'active') {
-                     return project.status === ProjectStatus.Active
+                if (this.type === 'active') {
+                    return project.status === ProjectStatus.Active
                 }
                 return project.status === ProjectStatus.Finished
             })
             this.assignedProjects = releventProjects;
             this.renderProjects();
-
         });
-        this.attach();
 
-        this.renderContent();
     }
     private renderProjects() {
         const ulistEl = document.getElementById(`${this.type}-projects-list`)! as HTMLUListElement;
+        ulistEl.innerHTML = '';
         for (const projectItem of this.assignedProjects) {
             const listItem = document.createElement('li');
             listItem.textContent = projectItem.title;
@@ -149,13 +164,8 @@ class ProjectList {
             ulistEl.appendChild(listItem);
         }
     }
-    private attach() {
-        this.hostElement.insertAdjacentElement('beforeend', this.sectionElement)
-        //Different way to append template into div tag
-        // const templateClone = this.templateElement.content.cloneNode(true);
-        // this.hostElement.appendChild(templateClone);
-    }
-    private renderContent() {
+    //should be private but abstarct private classes are not supported in typeScript.
+    renderContent() {
         const listId = `${this.type}-projects-list`
         this.sectionElement.querySelector('ul')!.id = listId
         this.sectionElement.querySelector('h2')!.textContent = `${this.type.toUpperCase()} PROJECTS`
@@ -164,8 +174,7 @@ class ProjectList {
 
 
 }
-
-/***ProjectInput Class */
+/*ProjectInput Class*/
 class ProjectInput {
     templateElement: HTMLTemplateElement;
     hostElement: HTMLDivElement;
