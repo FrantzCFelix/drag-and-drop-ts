@@ -1,18 +1,41 @@
-import { v4 as uuidv4 } from 'uuid';
-type uuid = typeof uuidv4;
+//import { v4 as uuidv4 } from 'uuid';
+
 
 // Project state management
-
 class ProjectStateManager {
-    private projects:any[] = [];
+    private listeners: any[] =[]
+    private projects: any[] = [];
+    private static instance: ProjectStateManager;
 
-    addProject(title:string, description:string, numOfPeople: number){
-       const project : Project ={
-           id: uuidv4(),
+    private constructor(){
+       // ProjectStateManager.instance = new ProjectStateManager;
+    }
+    
+    static getInstance(){
+        if(this.instance){
+            return this.instance;
+        }
+        this.instance = new ProjectStateManager();
+        return this.instance;
+    }
+    addListener(listenerFn: Function){
+        this.listeners.push(listenerFn);
+    }
 
-       } 
+    addProject(title: string, description: string, numOfPeople: number) {
+        const project: Project = {
+            id: Math.random().toString(),
+            title: title,
+            description: description,
+            people: numOfPeople
+        }
+        this.projects.push(project);
+        for(const listenerFn of this.listeners){
+            listenerFn(this.projects.slice());
+        }
     }
 }
+const projectState = ProjectStateManager.getInstance();
 //validate function 
 interface ValidatorObject {
     value: string | number;
@@ -22,8 +45,8 @@ interface ValidatorObject {
     min?: number;
     max?: number;
 }
-interface Project{
-    id: typeof uuidv4;
+interface Project {
+    id: string;
     title: string;
     description: string;
     people: number;
@@ -75,13 +98,31 @@ class ProjectList {
     templateElement: HTMLTemplateElement;
     hostElement: HTMLDivElement;
     sectionElement: HTMLElement;
+    assignedProjects: any[];
     constructor(private type: 'active' | 'finished') {
         this.templateElement = document.getElementById('project-list')! as HTMLTemplateElement;
         this.hostElement = document.getElementById('app')! as HTMLDivElement;
         this.sectionElement = document.importNode(this.templateElement.content, true).firstElementChild as HTMLElement;
         this.sectionElement.id = `${this.type}-projects`
+        this.assignedProjects = []
+        projectState.addListener((projects:any[])=>{
+            this.assignedProjects = projects;
+            this.renderProjects();
+
+        });
         this.attach();
+
         this.renderContent();
+    }
+    private renderProjects() {
+        const ulistEl = document.getElementById(`${this.type}-projects-list`)! as HTMLUListElement;
+        for(const projectItem of this.assignedProjects){
+            const listItem = document.createElement('li');
+            listItem.textContent = projectItem.title;
+            //console.log(listItem);
+            
+            ulistEl.appendChild(listItem);
+        } 
     }
     private attach() {
         this.hostElement.insertAdjacentElement('beforeend', this.sectionElement)
@@ -169,7 +210,8 @@ class ProjectInput {
         const userInput = this.gatherUserInput();
         if (Array.isArray(userInput)) {
             const [title, description, people] = userInput;
-            console.log(`${title}, ${description}, ${people}`);
+            //console.log(`${title}, ${description}, ${people}`);
+            projectState.addProject(title, description, people)
             this.clearInputs()
         }
     }
@@ -184,6 +226,6 @@ class ProjectInput {
     }
 }
 
-const projectInput = new ProjectInput();
-const activeProjectList = new ProjectList('active')
-const finishedProjectList = new ProjectList('finished')
+ new ProjectInput();
+ new ProjectList('active');
+ new ProjectList('finished');
