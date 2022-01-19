@@ -1,61 +1,85 @@
+// Project state management
+
 //validate function 
 interface ValidatorObject {
-value: string|number;
-required?: boolean;
-minLength?: number;
-maxLength?: number;
-min?: number;
-max?: number;
+    value: string | number;
+    required?: boolean;
+    minLength?: number;
+    maxLength?: number;
+    min?: number;
+    max?: number;
 }
 
-function validate(validatableInput: ValidatorObject){
+function validate(validatableInput: ValidatorObject) {
     let isValid = true;
-    if(validatableInput.required ){
+    if (validatableInput.required) {
         isValid = isValid && validatableInput.value.toString().trim().length !== 0
     }
-    if(validatableInput.minLength !== undefined && typeof validatableInput.value === 'string'){
+    if (validatableInput.minLength !== undefined && typeof validatableInput.value === 'string') {
         isValid = isValid && validatableInput.value.trim().length >= validatableInput.minLength
     }
-    if(validatableInput.maxLength !== undefined && typeof validatableInput.value === 'string'){
+    if (validatableInput.maxLength !== undefined && typeof validatableInput.value === 'string') {
         isValid = isValid && validatableInput.value.trim().length <= validatableInput.maxLength
     }
-    if(validatableInput.min !== undefined && typeof validatableInput.value === 'number' ){
+    if (validatableInput.min !== undefined && typeof validatableInput.value === 'number') {
         isValid = isValid && validatableInput.value >= validatableInput.min
     }
-    if(validatableInput.max !== undefined && typeof validatableInput.value === 'number' ){
+    if (validatableInput.max !== undefined && typeof validatableInput.value === 'number') {
         isValid = isValid && validatableInput.value <= validatableInput.max
-    }    
+    }
     return isValid;
 }
 
-
 // autobind decorator
-function autobind(_: any, _2: string, descriptor: PropertyDescriptor){
-// console.log(`Autobind function ${target}`);
-// console.log(`Autobind function ${methodName}`);
-// console.log(`Autobind function ${Object.keys(descriptor)}`);
-const originalMethod = descriptor.value;
-const newDescriptor : PropertyDescriptor ={
-    configurable: true,
-    get(){
-        const boundFn = originalMethod.bind(this);
-        //console.log(boundFn);       
-        return boundFn;
+function autobind(_: any, _2: string, descriptor: PropertyDescriptor) {
+    // console.log(`Autobind function ${target}`);
+    // console.log(`Autobind function ${methodName}`);
+    // console.log(`Autobind function ${Object.keys(descriptor)}`);
+    const originalMethod = descriptor.value;
+    const newDescriptor: PropertyDescriptor = {
+        configurable: true,
+        get() {
+            const boundFn = originalMethod.bind(this);
+            //console.log(boundFn);       
+            return boundFn;
+        }
+
     }
 
+    return newDescriptor;
+}
+/*Project class*/
+
+
+/*ProjectList Class */
+class ProjectList {
+    templateElement: HTMLTemplateElement;
+    hostElement: HTMLDivElement;
+    sectionElement: HTMLElement;
+    constructor(private type: 'active' | 'finished') {
+        this.templateElement = document.getElementById('project-list')! as HTMLTemplateElement;
+        this.hostElement = document.getElementById('app')! as HTMLDivElement;
+        this.sectionElement = document.importNode(this.templateElement.content, true).firstElementChild as HTMLElement;
+        this.sectionElement.id = `${this.type}-projects`
+        this.attach();
+        this.renderContent();
+    }
+    private attach() {
+        this.hostElement.insertAdjacentElement('beforeend', this.sectionElement)
+        //Different way to append template into div tag
+        // const templateClone = this.templateElement.content.cloneNode(true);
+        // this.hostElement.appendChild(templateClone);
+    }
+    private renderContent() {
+        const listId = `${this.type}-projects-list`
+        this.sectionElement.querySelector('ul')!.id = listId
+        this.sectionElement.querySelector('h2')!.textContent = `${this.type.toUpperCase()} PROJECTS`
+
+    }
+
+
 }
 
-return newDescriptor;
-}
-/*-------------------------DOM Elements---------------------------------------*/
-
-const templateProjectInputEl = document.getElementById('project-input');
-
-
-const templateSingleProjectEl = document.getElementById('single-project');
-const templateProjectListEl = document.getElementById('project-list');
-const projectSectionEl = document.getElementsByClassName('projects');
-const appDiv = document.getElementById('app');
 /***ProjectInput Class */
 class ProjectInput {
     templateElement: HTMLTemplateElement;
@@ -84,67 +108,63 @@ class ProjectInput {
         this.configure();
         this.attach();
     }
-private gatherUserInput():[string,string,number] | void{
-    const title = this.titleInputEl.value;
-    const description = this.textAreaDescriptionEl.value;
-    const people = this.peopleInputEl.value;
+    private gatherUserInput(): [string, string, number] | void {
+        const title = this.titleInputEl.value;
+        const description = this.textAreaDescriptionEl.value;
+        const people = this.peopleInputEl.value;
 
-    const titleOptions :ValidatorObject ={
-        value: title,
-        required: true,
-        minLength: 5,
-        maxLength: 30,
+        const titleOptions: ValidatorObject = {
+            value: title,
+            required: true,
+            minLength: 5,
+            maxLength: 30,
+        }
+        const descriptionOptions: ValidatorObject = {
+            value: description,
+            required: true,
+            minLength: 5,
+            maxLength: 255,
+        }
+        const peopleOptions: ValidatorObject = {
+            value: parseInt(people),
+            required: true,
+            min: 1,
+            max: 10
+        }
+        if (!validate(titleOptions) || !validate(descriptionOptions) || !validate(peopleOptions)) {
+            alert('Invalid Input, try again');
+            return;
+        } else {
+            return [title, description, parseInt(people)]
+        }
     }
-    const descriptionOptions :ValidatorObject ={
-        value: description,
-        required: true,
-        minLength: 5,
-        maxLength: 255,
-    }
-    const peopleOptions :ValidatorObject ={
-        value: parseInt(people),
-        required: true,
-        min: 1,
-        max: 10
-    }
-    if(!validate(titleOptions) || !validate(descriptionOptions) || !validate(peopleOptions)){
-        alert('Invalid Input, try again');
-        return;
-    }else{
-        return [title,description,parseInt(people)]
-    }
-}
-
-    private clearInputs(){
+    private clearInputs() {
         this.titleInputEl.value = "";
         this.peopleInputEl.value = "";
         this.textAreaDescriptionEl.value = "";
 
     }
-
     @autobind
-    private submitHandler(event: Event){
+    private submitHandler(event: Event) {
         event.preventDefault();
         const userInput = this.gatherUserInput();
-        if(Array.isArray(userInput)){
-            const [title, description,people] = userInput;
+        if (Array.isArray(userInput)) {
+            const [title, description, people] = userInput;
             console.log(`${title}, ${description}, ${people}`);
             this.clearInputs()
-        }   
+        }
     }
     private configure() {
         this.formEl.addEventListener('submit', this.submitHandler)
     }
-
     private attach() {
         this.hostElement.insertAdjacentElement('afterbegin', this.formEl)
         //Different way to append template into div tag
         // const templateClone = this.templateElement.content.cloneNode(true);
         // this.hostElement.appendChild(templateClone);
     }
-
-   
-
 }
 
-const projectInput = new ProjectInput()
+const projectInput = new ProjectInput();
+const activeProjectList = new ProjectList('active')
+const finishedProjectList = new ProjectList('finished')
