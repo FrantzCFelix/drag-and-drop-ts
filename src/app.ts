@@ -1,5 +1,18 @@
+import { v4 as uuidv4 } from 'uuid';
+type uuid = typeof uuidv4;
+
 // Project state management
 
+class ProjectStateManager {
+    private projects:any[] = [];
+
+    addProject(title:string, description:string, numOfPeople: number){
+       const project : Project ={
+           id: uuidv4(),
+
+       } 
+    }
+}
 //validate function 
 interface ValidatorObject {
     value: string | number;
@@ -8,6 +21,12 @@ interface ValidatorObject {
     maxLength?: number;
     min?: number;
     max?: number;
+}
+interface Project{
+    id: typeof uuidv4;
+    title: string;
+    description: string;
+    people: number;
 }
 
 function validate(validatableInput: ValidatorObject) {
