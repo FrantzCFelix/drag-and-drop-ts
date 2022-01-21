@@ -1,6 +1,18 @@
 //import { v4 as uuidv4 } from 'uuid';
 enum ProjectStatus { Active, Finished }
 
+//Drag&Drop interfaces
+
+interface Draggable{
+dragStartHandler(event:DragEvent):void;
+dragEndHandler(event:DragEvent):void;
+}
+interface DragTarget{
+dragOverHandler(event:DragEvent):void;
+dragHandler(event:DragEvent):void;
+dragLeaveHandler(event:DragEvent):void;
+}
+
 interface ValidatorObject {
     value: string | number;
     required?: boolean;
