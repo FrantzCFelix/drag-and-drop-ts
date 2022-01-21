@@ -16,7 +16,7 @@ interface Project {
     people: number;
     status: ProjectStatus;
 }
-type Listener = (items: Project[]) => void;
+type Listener<T> = (items: T[]) => void;
 
 function validate(validatableInput: ValidatorObject) {
     let isValid = true;
@@ -55,14 +55,19 @@ function autobind(_: any, _2: string, descriptor: PropertyDescriptor) {
 
     return newDescriptor;
 }
+abstract class State<T>{
+    protected listeners: Listener<T>[] = []
 
+    addListener(listenerFn: Listener<T>) {
+        this.listeners.push(listenerFn);
+    }
+}
 // Project state management class
-class ProjectStateManager {
-    private listeners: Listener[] = []
+class ProjectStateManager extends State<Project> {
     private projects: Project[] = [];
     private static instance: ProjectStateManager;
-
     private constructor() {
+        super();
         // ProjectStateManager.instance = new ProjectStateManager;
     }
 
@@ -73,9 +78,7 @@ class ProjectStateManager {
         this.instance = new ProjectStateManager();
         return this.instance;
     }
-    addListener(listenerFn: Listener) {
-        this.listeners.push(listenerFn);
-    }
+
 
     addProject(title: string, description: string, numOfPeople: number) {
         const newProject = new singleProject(Math.random().toString(),
@@ -129,17 +132,20 @@ class singleProject implements Project {
 
     }
 }
+
+/**Project Item */
+// class projectItem {
+
+// }
 /*ProjectList Class*/
 class ProjectList extends ComponentBase<HTMLDivElement, HTMLElement> {
     assignedProjects: Project[];
     constructor(private type: 'active' | 'finished') {
         super('project-list', 'app', false, `${type}-projects`)
-    
         this.assignedProjects = [];
         this.configure();
         this.renderContent();
     }
-
     configure(){
         projectState.addListener((projects: Project[]) => {
             const releventProjects = projects.filter((project) => {
@@ -153,6 +159,13 @@ class ProjectList extends ComponentBase<HTMLDivElement, HTMLElement> {
         });
 
     }
+    //should be private but abstarct private classes are not supported in typeScript.
+    renderContent() {
+        const listId = `${this.type}-projects-list`
+        this.element.querySelector('ul')!.id = listId
+        this.element.querySelector('h2')!.textContent = `${this.type.toUpperCase()} PROJECTS`
+
+    }
     private renderProjects() {
         const ulistEl = document.getElementById(`${this.type}-projects-list`)! as HTMLUListElement;
         ulistEl.innerHTML = '';
@@ -164,43 +177,33 @@ class ProjectList extends ComponentBase<HTMLDivElement, HTMLElement> {
             ulistEl.appendChild(listItem);
         }
     }
-    //should be private but abstarct private classes are not supported in typeScript.
-    renderContent() {
-        const listId = `${this.type}-projects-list`
-        this.sectionElement.querySelector('ul')!.id = listId
-        this.sectionElement.querySelector('h2')!.textContent = `${this.type.toUpperCase()} PROJECTS`
-
-    }
-
-
 }
 /*ProjectInput Class*/
-class ProjectInput {
-    templateElement: HTMLTemplateElement;
-    hostElement: HTMLDivElement;
-    formEl: HTMLFormElement;
+class ProjectInput extends ComponentBase<HTMLDivElement, HTMLFormElement>{
     titleInputEl: HTMLInputElement;
     peopleInputEl: HTMLInputElement;
     textAreaDescriptionEl: HTMLTextAreaElement;
     submitButtonEl: HTMLButtonElement;
 
     constructor() {
+        super('project-input', 'app', true, 'user-input')
         // const templateProjectInputEl = document.getElementById('project-input');
         // if(templateProjectInputEl){
         //     this.templateElement = templateProjectInputEl as HTMLTemplateElement;
         // }
-
-        this.templateElement = document.getElementById('project-input')! as HTMLTemplateElement;
-        this.hostElement = document.getElementById('app')! as HTMLDivElement;
-        //capture the form in the templates content
-        this.formEl = document.importNode(this.templateElement.content, true).firstElementChild as HTMLFormElement;
-        this.formEl.id = 'user-input'
-        this.titleInputEl = this.formEl.querySelector('#title')! as HTMLInputElement;
-        this.peopleInputEl = this.formEl.querySelector('#people')! as HTMLInputElement;
-        this.textAreaDescriptionEl = this.formEl.querySelector('#description')! as HTMLTextAreaElement;
-        this.submitButtonEl = this.formEl.querySelector('button')! as HTMLButtonElement;
+        this.titleInputEl = this.element.querySelector('#title')! as HTMLInputElement;
+        this.peopleInputEl = this.element.querySelector('#people')! as HTMLInputElement;
+        this.textAreaDescriptionEl = this.element.querySelector('#description')! as HTMLTextAreaElement;
+        this.submitButtonEl = this.element.querySelector('button')! as HTMLButtonElement;
         this.configure();
-        this.attach();
+        //this.attach();
+    }
+
+    configure() {
+        this.element.addEventListener('submit', this.submitHandler)
+    }
+    renderContent(){
+
     }
     private gatherUserInput(): [string, string, number] | void {
         const title = this.titleInputEl.value;
@@ -248,16 +251,7 @@ class ProjectInput {
             projectState.addProject(title, description, people)
             this.clearInputs()
         }
-    }
-    private configure() {
-        this.formEl.addEventListener('submit', this.submitHandler)
-    }
-    private attach() {
-        this.hostElement.insertAdjacentElement('afterbegin', this.formEl)
-        //Different way to append template into div tag
-        // const templateClone = this.templateElement.content.cloneNode(true);
-        // this.hostElement.appendChild(templateClone);
-    }
+    } 
 }
 
 new ProjectInput();
