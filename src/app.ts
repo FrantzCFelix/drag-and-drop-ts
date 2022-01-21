@@ -3,14 +3,14 @@ enum ProjectStatus { Active, Finished }
 
 //Drag&Drop interfaces
 
-interface Draggable{
-dragStartHandler(event:DragEvent):void;
-dragEndHandler(event:DragEvent):void;
+interface Draggable {
+    dragStartHandler(event: DragEvent): void;
+    dragEndHandler(event: DragEvent): void;
 }
-interface DragTarget{
-dragOverHandler(event:DragEvent):void;
-dragHandler(event:DragEvent):void;
-dragLeaveHandler(event:DragEvent):void;
+interface DragTarget {
+    dragOverHandler(event: DragEvent): void;
+    dropHandler(event: DragEvent): void;
+    dragLeaveHandler(event: DragEvent): void;
 }
 
 interface ValidatorObject {
@@ -115,17 +115,17 @@ abstract class ComponentBase<T extends HTMLElement, U extends HTMLElement> {
     hostElement: T;
     element: U;
 
-    constructor(templateElementId: string, hostElementId: string, insertAtStart: boolean,newElementId?: string){
+    constructor(templateElementId: string, hostElementId: string, insertAtStart: boolean, newElementId?: string) {
         this.templateElement = document.getElementById(templateElementId)! as HTMLTemplateElement;
         this.hostElement = document.getElementById(hostElementId)! as T;
         this.element = document.importNode(this.templateElement.content, true).firstElementChild as U;
-        if(newElementId){
+        if (newElementId) {
             this.element.id = newElementId;
         }
         this.attach(insertAtStart)
     }
     private attach(insertAtBeginning: boolean) {
-        this.hostElement.insertAdjacentElement( insertAtBeginning ? 'afterbegin' : 'beforeend', this.element)
+        this.hostElement.insertAdjacentElement(insertAtBeginning ? 'afterbegin' : 'beforeend', this.element)
         //Different way to append template into div tag
         // const templateClone = this.templateElement.content.cloneNode(true);
         // this.hostElement.appendChild(templateClone);
@@ -146,35 +146,47 @@ class singleProject implements Project {
 }
 
 /**Project Item */
-class projectItem extends ComponentBase<HTMLUListElement,HTMLLIElement> {
+class projectItem extends ComponentBase<HTMLUListElement, HTMLLIElement> implements Draggable {
     //private project: Project
 
-    get persons(){
-        if(this.project.people === 1){
+    get persons() {
+        if (this.project.people === 1) {
             return '1 person'
         }
-        else{
+        else {
             return `${this.project.people} people`
         }
     }
-    constructor(hostId: string, private project: Project){
-    super('single-project',hostId, false, project.id);
-    this.project=project;
+    constructor(hostId: string, private project: Project) {
+        super('single-project', hostId, false, project.id);
+        this.project = project;
 
-    this.configure();
-    this.renderContent();
-}
-configure() {
+        this.configure();
+        this.renderContent();
+    }
+    @autobind
+    dragStartHandler(event: DragEvent){
+    event.dataTransfer!.setData('text/plain', this.project.id);
+    event.dataTransfer!.effectAllowed = 'move';
+    }
+    @autobind
+    dragEndHandler(_event: DragEvent){
+        //console.log(event);
+        
+    }
 
-}
-renderContent() {
-this.element.querySelector('h2')!.textContent = this.project.title;
-this.element.querySelector('h3')!.textContent = this.project.people.toString();
-this.element.querySelector('p')!.textContent = `${this.persons} working on this`;
-}
+    configure() { 
+        this.element.addEventListener('dragstart', this.dragStartHandler);
+        this.element.addEventListener('dragstart', this.dragEndHandler);
+    }
+    renderContent() {
+        this.element.querySelector('h2')!.textContent = this.project.title;
+        this.element.querySelector('h3')!.textContent = this.project.description;
+        this.element.querySelector('p')!.textContent = `${this.persons} working on this`;
+    }
 }
 /*ProjectList Class*/
-class ProjectList extends ComponentBase<HTMLDivElement, HTMLElement> {
+class ProjectList extends ComponentBase<HTMLDivElement, HTMLElement> implements DragTarget{
     assignedProjects: Project[];
     constructor(private type: 'active' | 'finished') {
         super('project-list', 'app', false, `${type}-projects`)
@@ -182,7 +194,32 @@ class ProjectList extends ComponentBase<HTMLDivElement, HTMLElement> {
         this.configure();
         this.renderContent();
     }
-    configure(){
+
+    @autobind
+    dragOverHandler(event: DragEvent) {
+        if(event.dataTransfer && event.dataTransfer.types[0]==='text/plain'){
+            //Allows you to make the item droppable
+            event.preventDefault();
+            const listEl = this.element.querySelector('ul')!;
+            listEl.classList.add('droppable');
+        }
+ 
+    }
+    dropHandler(event: DragEvent){
+console.log(event.dataTransfer!.getData('text/plain'));
+
+
+    }
+    @autobind
+    dragLeaveHandler(_event: DragEvent){
+        const listEl = this.element.querySelector('ul')!;
+        listEl.classList.remove('droppable');
+    }
+    configure() {
+
+        this.element.addEventListener('dragover', this.dragOverHandler);
+        this.element.addEventListener('dragleave', this.dragLeaveHandler);
+        this.element.addEventListener('drop', this.dropHandler);
         projectState.addListener((projects: Project[]) => {
             const releventProjects = projects.filter((project) => {
                 if (this.type === 'active') {
@@ -207,7 +244,7 @@ class ProjectList extends ComponentBase<HTMLDivElement, HTMLElement> {
         ulistEl.innerHTML = '';
         for (const prjtItem of this.assignedProjects) {
             new projectItem(this.element.querySelector('ul')!.id, prjtItem)
-            
+
 
             // const listItem = document.createElement('li');
             // listItem.textContent = projectItem.title;
@@ -217,6 +254,7 @@ class ProjectList extends ComponentBase<HTMLDivElement, HTMLElement> {
         }
     }
 }
+
 /*ProjectInput Class*/
 class ProjectInput extends ComponentBase<HTMLDivElement, HTMLFormElement>{
     titleInputEl: HTMLInputElement;
@@ -241,7 +279,7 @@ class ProjectInput extends ComponentBase<HTMLDivElement, HTMLFormElement>{
     configure() {
         this.element.addEventListener('submit', this.submitHandler)
     }
-    renderContent(){
+    renderContent() {
 
     }
     private gatherUserInput(): [string, string, number] | void {
@@ -290,7 +328,7 @@ class ProjectInput extends ComponentBase<HTMLDivElement, HTMLFormElement>{
             projectState.addProject(title, description, people)
             this.clearInputs()
         }
-    } 
+    }
 }
 
 new ProjectInput();
