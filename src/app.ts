@@ -2,7 +2,6 @@
 enum ProjectStatus { Active, Finished }
 
 //Drag&Drop interfaces
-
 interface Draggable {
     dragStartHandler(event: DragEvent): void;
     dragEndHandler(event: DragEvent): void;
@@ -80,9 +79,7 @@ class ProjectStateManager extends State<Project> {
     private static instance: ProjectStateManager;
     private constructor() {
         super();
-        // ProjectStateManager.instance = new ProjectStateManager;
     }
-
     static getInstance() {
         if (this.instance) {
             return this.instance;
@@ -90,8 +87,6 @@ class ProjectStateManager extends State<Project> {
         this.instance = new ProjectStateManager();
         return this.instance;
     }
-
-
     addProject(title: string, description: string, numOfPeople: number) {
         const newProject = new singleProject(Math.random().toString(),
             title,
@@ -101,15 +96,13 @@ class ProjectStateManager extends State<Project> {
         this.projects.push(newProject);
         this.updateListeners();  
     }
-
     moveProject(projectId: string, newStatus: ProjectStatus) {
         const project = this.projects.find(prj => prj.id === projectId)
-        if(project){
+        if(project && project.status !== newStatus){
             project.status = newStatus;
             this.updateListeners();
         }
     }
-
     private updateListeners(){
         for (const listenerFn of this.listeners) {
             listenerFn(this.projects.slice());
@@ -118,7 +111,6 @@ class ProjectStateManager extends State<Project> {
 }
 // State manager instance
 const projectState = ProjectStateManager.getInstance();
-
 // Component Base class
 abstract class ComponentBase<T extends HTMLElement, U extends HTMLElement> {
     templateElement: HTMLTemplateElement;
@@ -143,7 +135,6 @@ abstract class ComponentBase<T extends HTMLElement, U extends HTMLElement> {
     abstract configure(): void;
     abstract renderContent(): void;
 }
-
 /*SingleProject class*/
 class singleProject implements Project {
     constructor(public id: string,
@@ -154,7 +145,6 @@ class singleProject implements Project {
 
     }
 }
-
 /**Project Item */
 class projectItem extends ComponentBase<HTMLUListElement, HTMLLIElement> implements Draggable {
     //private project: Project
@@ -213,12 +203,11 @@ class ProjectList extends ComponentBase<HTMLDivElement, HTMLElement> implements 
             const listEl = this.element.querySelector('ul')!;
             listEl.classList.add('droppable');
         }
-
     }
+    @autobind
     dropHandler(event: DragEvent) {
-        console.log(event.dataTransfer!.getData('text/plain'));
-
-
+        const prjId = event.dataTransfer!.getData('text/plain');
+        projectState.moveProject(prjId, this.type ==='active' ? ProjectStatus.Active : ProjectStatus.Finished);
     }
     @autobind
     dragLeaveHandler(_event: DragEvent) {
@@ -226,7 +215,6 @@ class ProjectList extends ComponentBase<HTMLDivElement, HTMLElement> implements 
         listEl.classList.remove('droppable');
     }
     configure() {
-
         this.element.addEventListener('dragover', this.dragOverHandler);
         this.element.addEventListener('dragleave', this.dragLeaveHandler);
         this.element.addEventListener('drop', this.dropHandler);
@@ -264,7 +252,6 @@ class ProjectList extends ComponentBase<HTMLDivElement, HTMLElement> implements 
         }
     }
 }
-
 /*ProjectInput Class*/
 class ProjectInput extends ComponentBase<HTMLDivElement, HTMLFormElement>{
     titleInputEl: HTMLInputElement;
