@@ -134,9 +134,33 @@ class singleProject implements Project {
 }
 
 /**Project Item */
-// class projectItem {
+class projectItem extends ComponentBase<HTMLUListElement,HTMLLIElement> {
+    //private project: Project
 
-// }
+    get persons(){
+        if(this.project.people === 1){
+            return '1 person'
+        }
+        else{
+            return `${this.project.people} people`
+        }
+    }
+    constructor(hostId: string, private project: Project){
+    super('single-project',hostId, false, project.id);
+    this.project=project;
+
+    this.configure();
+    this.renderContent();
+}
+configure() {
+
+}
+renderContent() {
+this.element.querySelector('h2')!.textContent = this.project.title;
+this.element.querySelector('h3')!.textContent = this.project.people.toString();
+this.element.querySelector('p')!.textContent = `${this.persons} working on this`;
+}
+}
 /*ProjectList Class*/
 class ProjectList extends ComponentBase<HTMLDivElement, HTMLElement> {
     assignedProjects: Project[];
@@ -169,12 +193,15 @@ class ProjectList extends ComponentBase<HTMLDivElement, HTMLElement> {
     private renderProjects() {
         const ulistEl = document.getElementById(`${this.type}-projects-list`)! as HTMLUListElement;
         ulistEl.innerHTML = '';
-        for (const projectItem of this.assignedProjects) {
-            const listItem = document.createElement('li');
-            listItem.textContent = projectItem.title;
-            //console.log(listItem);
+        for (const prjtItem of this.assignedProjects) {
+            new projectItem(this.element.querySelector('ul')!.id, prjtItem)
+            
 
-            ulistEl.appendChild(listItem);
+            // const listItem = document.createElement('li');
+            // listItem.textContent = projectItem.title;
+            // //console.log(listItem);
+
+            // ulistEl.appendChild(listItem);
         }
     }
 }
