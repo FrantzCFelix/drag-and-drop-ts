@@ -5,22 +5,25 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "lite-server"
+    "start": "webpack-dev-server",
+    "build": "webpack",
+    "prodBuild": "webpack --config webpack.config.prod.js"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/FrantzCFelix/drag-and-drop-ts.git"
   },
-  "keywords": [],
+  "keywords": [
+    "typescript"
+  ],
   "author": "",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/FrantzCFelix/drag-and-drop-ts/issues"
   },
   "homepage": "https://github.com/FrantzCFelix/drag-and-drop-ts#readme",
-  "dependencies": {
-  },
   "devDependencies": {
+    "clean-webpack-plugin": "^4.0.0",
     "lite-server": "^2.6.1",
     "ts-loader": "^9.2.6",
     "typescript": "^4.5.5",
