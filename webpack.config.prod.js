@@ -16,7 +16,7 @@ module.exports = {
     //     compress: true,
     //     port: 8080,
     // },
-    devtool: 'none',
+    //devtool: 'none',
     module: {
         rules: [
             {
